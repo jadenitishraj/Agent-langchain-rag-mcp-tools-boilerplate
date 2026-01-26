@@ -5,7 +5,7 @@
 <img width="901" height="866" alt="Screenshot 2026-01-26 at 9 38 18 AM" src="https://github.com/user-attachments/assets/d1191728-6d0a-4841-94a1-31181420d060" />
 
 
-AgentForge is a production-ready boilerplate for building advanced AI agents. It combines the power of **LangGraph** for orchestration, **RAG** for knowledge retrieval, and **MCP (Model Context Protocol)** for standardized tool integration—all wrapped in a modern **FastAPI** backend and **React** frontend.
+AgentForge is a production-ready boilerplate for building advanced AI agents. It combines the power of **LangGraph** for orchestration, **RAG** for knowledge retrieval, and **MCP (Model Context Protocol)** for standardized tool integration—all wrapped in a modern **FastAPI** backend and **React** frontend..
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
