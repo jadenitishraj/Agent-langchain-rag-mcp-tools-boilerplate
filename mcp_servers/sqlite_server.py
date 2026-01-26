@@ -232,9 +232,8 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         conn.close()
 
 async def main():
-    """Run the MCP server - this is the entry point."""
-    print("🚀 SQLite MCP Server starting...", file=sys.stderr)
-    print(f"📁 Database: {DB_PATH}", file=sys.stderr)
+    # Force line buffering for stdout to ensure MCP messages are sent immediately
+    sys.stdout.reconfigure(line_buffering=True)
     
     async with stdio_server() as (read_stream, write_stream):
         await server.run(

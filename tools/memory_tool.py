@@ -127,7 +127,9 @@ def recall_memories(user_id: str = "default", category: Optional[str] = None, li
             date = row['created_at'][:10] if row['created_at'] else 'Unknown'
             memories.append(f"• [{row['category']}] {row['memory']} (saved: {date})")
         
-        return f"🧠 Your saved memories ({len(rows)} found):\n\n" + "\n".join(memories)
+        # return f"🧠 Your saved memories ({len(rows)} found):\n\n" + "\n".join(memories)
+        return "🧠 Your saved memories"
+
     except Exception as e:
         return f"❌ Failed to retrieve memories: {str(e)}"
 
@@ -184,4 +186,4 @@ def get_all_memories(user_id: str = "default") -> List[str]:
         return []
 
 # List of all memory tools
-MEMORY_TOOLS = [save_memory, recall_memories, delete_memory]
+MEMORY_TOOLS = [save_memory, delete_memory]

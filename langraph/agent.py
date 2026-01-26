@@ -61,7 +61,7 @@ llm_streaming = ChatOpenAI(model="gpt-4o-mini", temperature=0.7, streaming=True)
 TOOL_MAP = {
     "get_contact_info": get_contact_info,
     "save_memory": save_memory,
-    "recall_memories": recall_memories,
+    # "recall_memories": recall_memories,
     "delete_memory": delete_memory,
     "web_search": web_search,
     "web_news": web_news,
@@ -96,7 +96,7 @@ This is an open-source boilerplate featuring:
 You have access to the following tools:
 1. get_contact_info: Use when users ask for contact information, email, phone number.
 2. save_memory: Use when users say "remember", "save", "don't forget", "store this".
-3. recall_memories: Use when users ask "what do you remember", "my saved memories".
+3. mcp_search_memories: Use when users ask "what do you remember", "my saved memories".
 4. delete_memory: Use when users want to forget/delete something from memory.
 5. web_search: Use when RAG context is empty/not relevant OR user asks about current events, news, or external documentation.
 
@@ -422,7 +422,8 @@ async def run_agent_stream(question: str, history: Optional[List[dict]] = None) 
         for tool_call in initial_response.tool_calls:
             tool_name = tool_call["name"]
             if tool_name in TOOL_MAP:
-                result = TOOL_MAP[tool_name].invoke(tool_call["args"])
+                # Use ainvoke to handle both sync and async tools correctly
+                result = await TOOL_MAP[tool_name].ainvoke(tool_call["args"])
                 tool_results.append(ToolMessage(content=str(result), tool_call_id=tool_call["id"]))
         
         all_messages = messages + [initial_response] + tool_results
