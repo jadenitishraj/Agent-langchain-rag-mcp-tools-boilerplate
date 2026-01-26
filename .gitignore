@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+.DS_Store
+
+# Node
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.npm
+npm-debug.log*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+rag/chroma_db/
+rag_v2/qdrant_db/
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
