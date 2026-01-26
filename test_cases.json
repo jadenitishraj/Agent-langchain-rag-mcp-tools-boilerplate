@@ -1,0 +1,10 @@
+[
+    {
+        "question": "What is the purpose of the chunks in this system?",
+        "ground_truth": "The chunks are semantic segments of documents used for embedding and retrieval in the RAG system."
+    },
+    {
+        "question": "How does hybrid search work?",
+        "ground_truth": "Hybrid search combines vector search (semantic) with BM25 (keyword) search and uses Reciprocal Rank Fusion (RRF) to combine the scores."
+    }
+]
