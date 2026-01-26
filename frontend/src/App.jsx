@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import { Send, Bot, User, Sparkles, Zap } from 'lucide-react'
+import { Bot, User, Sparkles, Zap } from 'lucide-react'
 import './index.css'
 import MessageContent from './components/MessageContent'
+import ChatInput from './components/ChatInput'
 
 function App() {
-  const [question, setQuestion] = useState('')
   const [messages, setMessages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [streamingMessage, setStreamingMessage] = useState('')
@@ -56,14 +56,12 @@ function App() {
     }))
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!question.trim() || isLoading) return
+  // Handle User Sending Message
+  const handleSendMessage = async (userQuestion) => {
+    if (!userQuestion.trim() || isLoading) return
 
-    const userQuestion = question
     const newMessages = [...messages, { type: 'user', content: userQuestion }]
     setMessages(newMessages)
-    setQuestion('')
     setIsLoading(true)
     setStreamingMessage('')
 
@@ -211,7 +209,7 @@ function App() {
               </div>
             ))}
 
-            {/* Streaming message - Render as plain text for stability */}
+            {/* Streaming message */}
             {streamingMessage && (
               <div className="message-row">
                 <div className="avatar agent">
@@ -242,27 +240,11 @@ function App() {
           </div>
         </div>
 
-        {/* Input Area */}
-        <form onSubmit={handleSubmit} className="input-form">
-          <div className="input-container">
-            <div className="input-inner">
-              <input
-                type="text"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="Ask about the code, architecture, RAG pipeline..."
-                disabled={isLoading}
-              />
-              <button
-                type="submit"
-                className="send-button"
-                disabled={isLoading || !question.trim()}
-              >
-                <Send size={22} />
-              </button>
-            </div>
-          </div>
-        </form>
+        {/* Input Area (Isolated Component) */}
+        <ChatInput
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading}
+        />
 
       </div>
     </div>

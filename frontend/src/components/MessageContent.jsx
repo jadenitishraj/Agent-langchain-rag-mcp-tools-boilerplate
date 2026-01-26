@@ -62,7 +62,7 @@ const InlineCode = ({ children }) => {
     );
 };
 
-const MessageContent = ({ content }) => {
+const MessageContent = React.memo(({ content }) => {
     if (!content) return null;
 
     return (
@@ -120,6 +120,6 @@ const MessageContent = ({ content }) => {
             </ReactMarkdown>
         </div>
     );
-};
+});
 
 export default MessageContent;
