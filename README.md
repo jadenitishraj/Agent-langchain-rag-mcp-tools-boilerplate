@@ -56,7 +56,7 @@ graph TD
 ### 1. Clone & Setup
 
 ```bash
-git clone https://github.com/yourusername/agentforge.git
+git clone https://github.com/yourusername/agentforge.git](https://github.com/jadenitishraj/Agent-langchain-rag-mcp-tools-boilerplate.git
 cd agentforge
 ```
 
