@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from .schemas import AgentRequest, AgentResponse
-from .agent import run_agent, run_agent_stream
+from .agent_v2 import run_agent_v2 as run_agent, run_agent_v2_stream as run_agent_stream
 import os
 
 router = APIRouter(

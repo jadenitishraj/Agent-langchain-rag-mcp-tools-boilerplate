@@ -20,7 +20,10 @@ app.add_middleware(
 )
 
 app.include_router(users.router)
+from routers import feedback
+
 app.include_router(agent_router.router)
+app.include_router(feedback.router)
 
 @app.get("/")
 def read_root():

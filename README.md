@@ -4,7 +4,6 @@
 
 <img width="901" height="866" alt="Screenshot 2026-01-26 at 9 38 18 AM" src="https://github.com/user-attachments/assets/d1191728-6d0a-4841-94a1-31181420d060" />
 
-
 AgentForge is a production-ready boilerplate for building advanced AI agents. It combines the power of **LangGraph** for orchestration, **RAG** for knowledge retrieval, and **MCP (Model Context Protocol)** for standardized tool integration—all wrapped in a modern **FastAPI** backend and **React** frontend..
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -18,7 +17,7 @@ AgentForge is a production-ready boilerplate for building advanced AI agents. It
 - **📚 RAG Pipeline v2**: Advanced retrieval with semantic chunking, re-ranking, and hybrid search.
 - **🔌 MCP Integration**: Full support for Anthropic's Model Context Protocol (Client & Server).
 - **🛡️ Guardrails**: Input/Output validation for safety, privacy (PII redaction), and quality.
-- **⚡ Full-Stack**: 
+- **⚡ Full-Stack**:
   - **Backend**: FastAPI with async support and streaming responses.
   - **Frontend**: Modern React (Vite) with TailwindCSS and markdown rendering.
 - **🧠 Memory**: Persistent user memories using SQLite.
@@ -30,14 +29,14 @@ AgentForge is a production-ready boilerplate for building advanced AI agents. It
 graph TD
     User[User / Frontend] <-->|Rest API / SSE| API[FastAPI Backend]
     API <-->|Orchestration| Agent[LangGraph Agent]
-    
+
     subgraph "Agent Brain"
         Agent <-->|Safety| Guard[Guardrails]
         Agent <-->|Context| RAG[RAG Pipeline]
         Agent <-->|Tools| MCP[MCP Client]
         Agent <-->|State| Memory[SQLite Memory]
     end
-    
+
     subgraph "External"
         MCP <-->|Protocol| Tools[External Tools]
         RAG <-->|Embeddings| VectorDB[Vector Store]
@@ -97,11 +96,13 @@ python scripts/index_codebase.py
 You can run the components separately:
 
 **Backend:**
+
 ```bash
 uvicorn main:app --reload --port 8000
 ```
 
 **Frontend:**
+
 ```bash
 cd frontend
 npm run dev
@@ -137,3 +138,43 @@ Contributions are welcome! Please read `CONTRIBUTING.md` for details.
 ## 📄 License
 
 MIT License - feel free to use this boilerplate for your own projects!
+
+## 🚀 Agent V2: Multi-Agent Orchestrator
+
+The system now includes an advanced **Multi-Agent Architecture** (`agent_v2.py`) that replaces the single-node agent with a team of specialized AI workers.
+
+### 🏗️ Architecture
+
+The **Orchestrator** plans the execution and delegates tasks to parallel agents. The **Combiner** synthesizes their reports, and a **Verifier** quality-checks the result.
+
+    VerifierAgent -- Rejected --> CombinerAgent
+
+    OutputGuardrails --> FinalOutput
+
+```
+
+### ⚡ Key Features
+
+1.  **Orchestrator**: The "Mastermind" that coordinates the workflow.
+2.  **True Parallel Execution**:
+    - **History Agent**: Summarizes conversation context.
+    - **RAG Agent**: Retrieves code/docs from the vector database.
+    - **Memory Agent**: Fetches user preferences and facts.
+    - **Web Agent**: Searches the internet for real-time info.
+    - _All these run simultaneously for maximum speed._
+3.  **Combiner Agent**: Synthesizes conflicting or distributed information into a single, cohesive answer.
+4.  **Verifier Agent**: Acts as a QA Lead, critiquing the draft and requesting improvements if needed.
+5.  **Streaming**: Manual orchestration allows real-time token streaming from the Combiner Agent to the UI.
+
+## 🧠 Gen AI Best Practices
+
+### ⚡ Semantic Caching (Latent Optimization)
+To reduce costs and latency, the system implements **Semantic Caching** using Qdrant.
+- **How it works**: Before querying the LLM, the system embeds the user's question and searches for similar past queries (Threshold: `0.70`).
+- **Benefit**: If a similar question was asked before, the cached response is returned **instantly** (< 0.5s), avoiding expensive LLM calls.
+
+### 🔄 RLHF Feedback Loop (Data Flywheel)
+The system now supports **Reinforcement Learning from Human Feedback (RLHF)** data collection.
+- **Feedback API**: `/feedback` endpoint allows users to rate responses (Thumbs Up/Down).
+- **Storage**: Feedback is stored in the database (`Feedback` table) to be used for future fine-tuning or RAG evaluation.
+```

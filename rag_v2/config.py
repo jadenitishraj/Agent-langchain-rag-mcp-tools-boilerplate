@@ -51,7 +51,7 @@ RERANK_TOP_K = 3            # Final count after reranking
 # =============================================================================
 QDRANT_HOST = "localhost"
 QDRANT_PORT = 6333
-USE_LOCAL_QDRANT = True     # Use local file-based Qdrant (no server needed)
+USE_LOCAL_QDRANT = True # Use local file-based Qdrant (no server needed)
 
 # =============================================================================
 # QUANTIZATION (Storage optimization)
