@@ -13,7 +13,9 @@ AgentForge is a production-ready boilerplate for building advanced AI agents. It
 
 ## ✨ Key Features
 
-- **🤖 LangGraph Agent**: State-of-the-art agent orchestration with state management.
+- **🤖 Multi-Agent Orchestrator**: Advanced V2 architecture with specialized parallel agents (History, RAG, Memory, Web) and verifier loops.
+- **⚡ Semantic Caching**: Qdrant-based caching to instantly serve repeated queries, reducing latency and costs.
+- **🔄 RLHF Feedback Loop**: Built-in mechanism to collect user feedback (Thumbs Up/Down) for future model fine-tuning.
 - **📚 RAG Pipeline v2**: Advanced retrieval with semantic chunking, re-ranking, and hybrid search.
 - **🔌 MCP Integration**: Full support for Anthropic's Model Context Protocol (Client & Server).
 - **🛡️ Guardrails**: Input/Output validation for safety, privacy (PII redaction), and quality.
@@ -112,8 +114,9 @@ Visit **http://localhost:5173** to chat with your agent!
 
 ## 📂 Project Structure
 
-- **`langraph/`**: Core agent logic, state graph, and router.
-- **`rag/`**: Retrieval Augmented Generation pipeline (Loader -> Embedder -> Store).
+- **`langraph/`**: Core agent logic, including the V2 Multi-Agent Orchestrator (`agent_v2.py`).
+- **`rag_v2/`**: Advanced RAG pipeline and **Semantic Cache Manager**.
+- **`routers/`**: FastAPI routes, including the new **RLHF Feedback API**.
 - **`mcp_servers/`**: Model Context Protocol servers (Search, SQLite).
 - **`guardrails/`**: Input/Output safety checks (PII, Toxicity, Hallucination).
 - **`frontend/`**: React application with TailwindCSS.
