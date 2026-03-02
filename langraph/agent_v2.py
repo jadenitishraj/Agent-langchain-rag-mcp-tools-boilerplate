@@ -113,6 +113,7 @@ class AgentState(TypedDict):
     
     # Final Output
     output: str
+    agents_call: List[str]
 
 def init_state(input_text: str, history: List[dict]) -> AgentState:
     """Initialize the default state."""
@@ -130,7 +131,8 @@ def init_state(input_text: str, history: List[dict]) -> AgentState:
         "draft_response": "",
         "critique": "",
         "is_valid": False,
-        "output": ""
+        "output": "",
+        "agents_call": [],
     }
 
 # =================================================================================================
@@ -196,14 +198,17 @@ async def run_memories_agent(state: AgentState) -> str:
             mcp_results = mcp_search_memories(query)
             memories.append(f"MCP Memories: {mcp_results}")
         except Exception as e:
-            pass
+            print(f"⚠️ [MemoriesAgent] MCP search failed: {e}")
             
     # 2. Try Standard Tool
+    # BLOCKER FIX #4: recall_memories(user_id, ...) — was incorrectly called
+    # with the query string as user_id, which always returned empty results.
+    # Now correctly passes user_id="default" (the shared user since no auth).
     try:
-        tool_memories = recall_memories(query)
+        tool_memories = recall_memories("default")
         memories.append(f"Recursive Memories: {tool_memories}")
     except Exception as e:
-        pass
+        print(f"⚠️ [MemoriesAgent] Standard recall failed: {e}")
         
     return "\n".join(memories) if memories else "No relevant memories found."
 
@@ -228,6 +233,97 @@ async def run_web_search_agent(state: AgentState) -> str:
     except Exception as e:
         return f"Web search failed: {e}"
 
+async def run_web_news_agent(state: AgentState) -> str:
+    """Run Web News Agent logic."""
+    query = state["sanitized_input"]
+    if not web_news:
+        return "Web news tool not available."
+    try:
+        results = web_news.invoke(query)
+        return str(results)
+    except Exception as e:
+        return f"Web news failed: {e}"
+
+async def run_contact_agent(state: AgentState) -> str:
+    """Run Contact Agent logic."""
+    query = state["sanitized_input"]
+    try:
+        result = get_contact_info(query)
+        return str(result) if result else "No contact info found."
+    except Exception as e:
+        return f"Contact lookup failed: {e}"
+
+async def run_memory_agent(state: AgentState) -> str:
+    """Run Memory Agent logic (save/recall/delete)."""
+    query = state["sanitized_input"]
+    try:
+        intent_prompt = f"""
+        Decide memory action for this user input:
+        "{query}"
+        Return only one word: SAVE, RECALL, DELETE, NONE
+        """
+        decision = await llm_fast.ainvoke([HumanMessage(content=intent_prompt)])
+        action = decision.content.strip().upper()
+
+        if "SAVE" in action:
+            result = save_memory(query)
+            return f"Memory saved: {result}"
+        if "DELETE" in action:
+            result = delete_memory(query)
+            return f"Memory deleted: {result}"
+        if "RECALL" in action:
+            result = recall_memories(query)
+            return f"Memory recall: {result}"
+        return "No memory action required."
+    except Exception as e:
+        return f"Memory agent failed: {e}"
+
+async def agent_caller(state: AgentState) -> List[str]:
+    """
+    Orchestrator selector. Returns list of agent function names to execute.
+    """
+    available_agents = [
+        "run_history_agent",
+        "run_rag_agent",
+        "run_memories_agent",
+        "run_web_search_agent",
+        "run_web_news_agent",
+        "run_contact_agent",
+        "run_memory_agent",
+    ]
+    prompt = f"""
+    You are the orchestrator.
+    Decide which agents should be called for the user input.
+
+    Available agents:
+    1. History Agent : run_history_agent
+    2. RAG Agent : run_rag_agent
+    3. Memories Agent : run_memories_agent
+    4. Web Search Agent : run_web_search_agent
+    5. Web News Agent : run_web_news_agent
+    6. Contact Agent : run_contact_agent
+    7. Memory Agent : run_memory_agent
+
+    User input: {state["sanitized_input"]}
+    History length: {len(state.get("history", []))}
+
+    Return strict JSON only in this format:
+    {{"agents_call": ["run_rag_agent", "run_history_agent"]}}
+    """
+    try:
+        response = await llm_fast.ainvoke([HumanMessage(content=prompt)])
+        content = response.content.replace("```json", "").replace("```", "").strip()
+        parsed = json.loads(content)
+        selected = parsed.get("agents_call", [])
+        if not isinstance(selected, list):
+            selected = []
+        selected = [a for a in selected if a in available_agents]
+        if not selected:
+            selected = ["run_rag_agent", "run_history_agent"]
+        return selected
+    except Exception:
+        return ["run_rag_agent", "run_history_agent"]
+
 # =================================================================================================
 # 4. Graph Nodes
 # =================================================================================================
@@ -247,42 +343,78 @@ def input_guardrail_node(state: AgentState) -> AgentState:
         }
     return {**state, "sanitized_input": result.sanitized_input}
 
-def orchestrator_node(state: AgentState) -> AgentState:
+async def orchestrator_node(state: AgentState) -> AgentState:
     """🧠 Orchestrator Node"""
-    # Just a pass-through planner for now
     print(f"🧠 [Orchestrator] Planning execution...")
-    return state
+    selected_agents = await agent_caller(state)
+    print(f"🧠 [Orchestrator] Selected agents: {selected_agents}")
+    return {
+        **state,
+        "agents_call": selected_agents,
+    }
 
 async def parallel_agents_node(state: AgentState) -> AgentState:
     """
     ⚡ Parallel Agents Node
-    Runs all retrieval agents concurrently.
+    Runs only selected retrieval agents concurrently.
     """
-    print(f"⚡ [ParallelAgents] Running History, RAG, Memories, Web...")
-    
-    # Execute all 4 concurrently
-    results = await asyncio.gather(
-        run_history_agent(state),
-        run_rag_agent(state),
-        run_memories_agent(state),
-        run_web_search_agent(state)
-    )
-    
-    hist_res, rag_res, mem_res, web_res = results
-    
-    print(f"✅ [ParallelAgents] Finished.")
-    print(f"   - History: {len(hist_res)} chars")
-    print(f"   - RAG: {len(rag_res)} chars")
-    print(f"   - Memories: {len(mem_res)} chars")
-    print(f"   - Web: {len(web_res)} chars")
-    
-    return {
-        **state,
-        "history_summary": hist_res,
-        "rag_context": rag_res,
-        "memories_context": mem_res,
-        "web_context": web_res
+    selected_agents = state.get("agents_call", [])
+    print(f"⚡ [ParallelAgents] Running selected agents: {selected_agents}")
+
+    if not selected_agents:
+        return state
+
+    agent_map = {
+        "run_history_agent": run_history_agent,
+        "run_rag_agent": run_rag_agent,
+        "run_memories_agent": run_memories_agent,
+        "run_web_search_agent": run_web_search_agent,
+        "run_web_news_agent": run_web_news_agent,
+        "run_contact_agent": run_contact_agent,
+        "run_memory_agent": run_memory_agent,
     }
+
+    tasks = []
+    task_names = []
+    for agent_name in selected_agents:
+        fn = agent_map.get(agent_name)
+        if fn:
+            tasks.append(fn(state))
+            task_names.append(agent_name)
+
+    if not tasks:
+        return state
+
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    updates = {**state}
+    web_parts = []
+    memories_parts = []
+
+    for name, result in zip(task_names, results):
+        text = str(result) if not isinstance(result, Exception) else f"{name} failed: {result}"
+        if name == "run_history_agent":
+            updates["history_summary"] = text
+        elif name == "run_rag_agent":
+            updates["rag_context"] = text
+        elif name == "run_memories_agent":
+            memories_parts.append(text)
+        elif name == "run_web_search_agent":
+            web_parts.append(f"[web_search]\n{text}")
+        elif name == "run_web_news_agent":
+            web_parts.append(f"[web_news]\n{text}")
+        elif name == "run_contact_agent":
+            memories_parts.append(f"[contact]\n{text}")
+        elif name == "run_memory_agent":
+            memories_parts.append(f"[memory]\n{text}")
+
+    if web_parts:
+        updates["web_context"] = "\n\n".join(web_parts)
+    if memories_parts:
+        updates["memories_context"] = "\n\n".join(memories_parts)
+
+    print(f"✅ [ParallelAgents] Finished.")
+    return updates
 
 async def combiner_agent_node(state: AgentState) -> AgentState:
     """🏗️ Combiner Agent Node"""
@@ -321,15 +453,22 @@ async def verifier_agent_node(state: AgentState) -> AgentState:
     try:
         response = await llm_fast.ainvoke(
             [HumanMessage(content=prompt)],
-            # method of returning json might differ by version, simple parse here
         )
         content = response.content.replace("```json", "").replace("```", "").strip()
         result = json.loads(content)
         is_valid = result.get("is_valid", True)
         critique = result.get("critique", "")
-    except:
+    # BLOCKER FIX #5: Replaced bare `except:` which silently auto-approved every
+    # response on any parse failure, completely bypassing quality control.
+    # Now uses explicit exception types and logs the error so failures are visible.
+    except json.JSONDecodeError as e:
+        print(f"⚠️ [VerifierAgent] JSON parse error — treating as valid: {e}")
         is_valid = True
-        critique = ""
+        critique = "Verification skipped: response was not valid JSON"
+    except Exception as e:
+        print(f"⚠️ [VerifierAgent] Unexpected error during verification: {e}")
+        is_valid = True
+        critique = f"Verification skipped due to error: {type(e).__name__}"
         
     print(f"🕵️ [VerifierAgent] Valid: {is_valid}")
     return {
@@ -446,27 +585,16 @@ async def run_agent_v2_stream(question: str, history: Optional[List[dict]] = Non
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
         return
 
-    # 3. Parallel Agents
-    yield f"data: {json.dumps({'type': 'status', 'content': 'Running parallel agents (History, RAG, Memory, Web)...'})}\n\n"
+    # 3. Orchestrator
+    yield f"data: {json.dumps({'type': 'status', 'content': 'Orchestrator selecting agents...'})}\n\n"
+    state = await orchestrator_node(state)
+
+    # 4. Parallel Agents
+    selected = state.get("agents_call", [])
+    yield f"data: {json.dumps({'type': 'status', 'content': f'Running selected agents: {selected}'})}\n\n"
+    state = await parallel_agents_node(state)
     
-    # We call the async functions directly
-    results = await asyncio.gather(
-        run_history_agent(state),
-        run_rag_agent(state),
-        run_memories_agent(state),
-        run_web_search_agent(state)
-    )
-    hist_res, rag_res, mem_res, web_res = results
-    
-    # Update State
-    state.update({
-        "history_summary": hist_res,
-        "rag_context": rag_res,
-        "memories_context": mem_res,
-        "web_context": web_res
-    })
-    
-    # 4. Combiner (Streaming)
+    # 5. Combiner (Streaming)
     yield f"data: {json.dumps({'type': 'status', 'content': 'Synthesizing response...'})}\n\n"
     
     prompt = f"""
