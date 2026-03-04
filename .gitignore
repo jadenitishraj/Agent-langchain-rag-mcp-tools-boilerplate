@@ -27,3 +27,6 @@ rag_v2/qdrant_db/
 
 # Logs
 *.log
+
+# Study Material
+study_material/
