@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/jadenitishraj-agent-langchain-rag-mcp-tools-boilerplate-badge.png)](https://mseep.ai/app/jadenitishraj-agent-langchain-rag-mcp-tools-boilerplate)
+
 # AgentForge Boilerplate 🚀
 
 **The Ultimate Full-Stack AI Agent Starter Kit**
